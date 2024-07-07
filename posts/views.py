@@ -1,10 +1,14 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework.decorators import api_view
+from django.contrib.auth.decorators import login_required
 from posts.models import Post
 from posts.serializers import PostSerializer
 from rest_framework import status, viewsets, filters
 from rest_framework.response import Response
+from rest_framework.generics import ListAPIView
 from posts.permissions import IsOwner, OnlyRead
+from rest_framework.permissions import IsAuthenticated
+import logging
 
 
 # 검색(전체), 검색(post_id), 검색(color) 게시, 수정, 삭제
@@ -18,6 +22,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
 
 @api_view(['POST'])
 def post_like_api_view(request, post_id):

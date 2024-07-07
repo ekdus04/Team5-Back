@@ -55,10 +55,17 @@ def comment_retrieve_api_view(request, comment_id):
 
 @api_view(['POST'])
 def comment_like_api_view(request, comment_id):
-    comment = get_object_or_404(Comment, id=comment_id)
-    if comment.like_users.filter(id=request.user.id).exists():
-        comment.like_users.remove(request.user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    else:
-        comment.like_users.add(request.user)
-        return Response(status=status.HTTP_201_CREATED)
+    try:
+        comment = get_object_or_404(Comment, id=int(comment_id))
+        
+        if request.user.is_authenticated and comment.like_users.filter(id=request.user.id).exists():
+            comment.like_users.remove(request.user)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        elif request.user.is_authenticated:
+            comment.like_users.add(request.user)
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+    
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
