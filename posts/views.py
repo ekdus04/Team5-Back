@@ -5,7 +5,7 @@ from posts.models import Post
 from posts.serializers import PostSerializer
 from rest_framework import status, viewsets, filters
 from rest_framework.response import Response
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from posts.permissions import IsOwner, OnlyRead
 from rest_framework.permissions import IsAuthenticated
 import logging
@@ -34,3 +34,27 @@ def post_like_api_view(request, post_id):
     else:
         post.like_users.add(request.user)
         return Response(status=status.HTTP_201_CREATED)
+    
+# 유저 검색
+# class MyPostAPIView(ListAPIView):
+#     filter_backends = [filters.SearchFilter]
+#     search_fields = ['color']
+#     def get(self, request):
+#         try:
+#             post_set = Post.objects.filter(user=request.user)
+#             post_list = [{"id": post.id,
+#                           "title": post.title,
+#                           "content": post.content,
+#                           "comment": post.comment,
+#                           }for post in post_set]
+#             return Response({"result": post_list}, status=status.HTTP_200_OK)
+#         except KeyError:
+#             return Response({"message" : "NOT FOUND"}, status=status.HTTP_404_NOT_FOUND)
+
+class MyPostAPIView(ListAPIView):
+    serializer_class = PostSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['color']
+
+    def get_queryset(self):
+        return Post.objects.filter(user=self.request.user)

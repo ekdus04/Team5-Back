@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from posts.models import Post
 from users.models import User
-from django.contrib.auth.hashers import make_password
 
 class UserSerializer(serializers.ModelSerializer):
     posts_num = serializers.SerializerMethodField()
@@ -28,9 +27,8 @@ class UserSerializer(serializers.ModelSerializer):
     # 유저의 팔로잉 수
     def get_following_count(self, obj):
         return obj.followings.count()
-
     def create(self, validated_data):
-        # 비밀번호를 해시 처리하여 저장
-        if 'password' in validated_data:
-            validated_data['password'] = make_password(validated_data['password'])
-        return super().create(validated_data)
+        user = User(**validated_data)
+        user.set_password(validated_data['password'])  # 비밀번호 해싱
+        user.save()
+        return user

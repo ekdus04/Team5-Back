@@ -20,7 +20,7 @@ class User(AbstractUser):
     )
     gender = models.CharField(max_length=2, choices=GENDER_CHOICES, default="남자")
     sign_up_at = models.DateTimeField(auto_now_add=True)
-    age = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(100)])
+    age = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(100)], null=True)
     profile_image = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

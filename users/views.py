@@ -1,11 +1,10 @@
 import os
-from django.shortcuts import render
 from rest_framework.response import Response
 from users.models import User
+from posts.models import Post
 from users.serializers import UserSerializer
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
-from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
@@ -13,6 +12,50 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from .permissions import IsOwnerOrReadOnly
 from django.shortcuts import get_object_or_404
+from achievements.models import Achievement
+from user_achievements.models import UserAchievement
+from user_achievements.serializers import UserAchievementSerializer
+
+class AchievementListAPIView(ListAPIView):
+    serializer_class = UserAchievementSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # 기본 업적을 사용자에게 귀속
+        for achievement in Achievement.objects.all():
+            if not UserAchievement.objects.filter(user=user, achievement=achievement).exists():
+                UserAchievement.objects.create(user=user, achievement=achievement, unlocked=False)
+
+        # 사용자 업적 가져오기
+        achievements = UserAchievement.objects.filter(user=user)
+
+        # 업적 달성 조건 확인 및 상태 업데이트s
+        for user_achievement in achievements:
+            if not user_achievement.unlocked and self.check_achievement_unlocked(user, user_achievement.achievement, user_achievement.unlocked):
+                user_achievement.unlocked = True
+                user_achievement.save()
+        return achievements
+    def check_achievement_unlocked(self, user, achievement, unlocked):
+        if unlocked:
+            return True
+        
+        # 업적 달성 조건을 확인하는 로직 구현
+        if achievement.title == '탐험의 시작' and user.followings.count() >= 1:
+            return True
+        elif achievement.title == '연결의 열쇠' and user.followers.count() >= 1:
+            return True
+        elif achievement.title == '인기의 중심' and user.followers.count() >= 50:
+            return True
+        elif achievement.title == '축하의 순간' and user.followers.count() >= 100:
+            return True
+        elif achievement.title == '창작의 첫 걸음' and Post.objects.filter(user=user).count() >= 1:
+            return True
+        elif achievement.title == '창작의 열정' and Post.objects.filter(user=user).count() >= 4:
+            return True
+        elif achievement.title == '창작의 반짝임' and Post.objects.filter(user=user).count() >= 8:
+            return True
 
 # 회원가입, 유저 전체 확인
 class UserListCreateAPIView(ListCreateAPIView):
@@ -95,19 +138,14 @@ class LoginAPIView(APIView):
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
-        # try:
-        #     user = User.objects.get(username=username)
-        # except User.DoesNotExist:
-        #     return Response({'잘못된 아이디 혹은 비밀번호입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
-        # if not check_password(password, user.password):
-        #     return Response({'잘못된 아이디 혹은 비밀번호입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
-        user = authenticate(request, username=username, password=password)
-
-        if user is None:
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({'잘못된 아이디 혹은 비밀번호입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+        if not check_password(password, user.password):
             return Response({'잘못된 아이디 혹은 비밀번호입니다.'}, status=status.HTTP_401_UNAUTHORIZED)
         token = RefreshToken.for_user(user)
         serializer = UserSerializer(user)
-        
         return Response(
             status=status.HTTP_200_OK,
             data={
@@ -115,6 +153,7 @@ class LoginAPIView(APIView):
                 'user': serializer.data,
             }
         )
+
 #팔로우 
 class FollowAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -161,9 +200,3 @@ class UserFollowingAPIView(ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-# 유저 검색
-class MyPostAPIView(ListAPIView):
-    serializer_class = UserSerializer
-    
-    def get_queryset(self):
-        return User.posts.all()

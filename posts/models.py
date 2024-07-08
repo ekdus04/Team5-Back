@@ -20,6 +20,7 @@ class Post(models.Model):
 
     date = models.DateField(null=True) # 날짜 기입
     created_at = models.DateTimeField(auto_now_add=True) # 생성시간
+    updated_at = models.DateTimeField(auto_now=True) # 수정시간
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     like_users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='like_posts')
