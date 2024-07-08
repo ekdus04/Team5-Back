@@ -24,6 +24,7 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
+# 좋아요
 @api_view(['POST'])
 def post_like_api_view(request, post_id):
     post = get_object_or_404(Post, id=post_id)
