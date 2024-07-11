@@ -13,8 +13,8 @@ class Post(models.Model):
     )
 
     title = models.CharField(max_length=50, null=True)
-    content = models.CharField(max_length=1000, null=True, blank=True)
-    comment = models.CharField(max_length=100, null=True)
+    content = models.TextField(max_length=1000, null=True, blank=True)
+    comment = models.TextField(max_length=100, null=True)
     image = models.ImageField(upload_to='posts', null=True)
     color = models.CharField(max_length=2, choices=COLOR_CHOICES, default="")
 
